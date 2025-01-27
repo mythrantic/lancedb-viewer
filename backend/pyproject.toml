@@ -5,6 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "azure-identity>=1.19.0",
+    "azure-keyvault>=1.1.0",
+    "debugpy>=1.8.12",
+    "fastapi>=0.115.7",
+    "jupyter>=1.1.1",
     "lancedb>=0.18.0",
+    "numpy>=2.0.2",
+    "openai>=1.60.1",
     "pandas>=2.2.3",
+    "pydantic>=2.10.6",
+    "python-dotenv>=1.0.1",
+    "uvicorn>=0.34.0",
 ]
