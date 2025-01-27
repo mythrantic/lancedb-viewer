@@ -9,7 +9,7 @@ from lancedb.embeddings import TextEmbeddingFunction, get_registry
 import numpy as np
 from functools import cached_property
 from openai import AzureOpenAI
-from src.azure_openai.setup import AzureOpenAiConfig
+from setup import AzureOpenAiConfig
 from azure.identity import DefaultAzureCredential
 import lancedb
 import pandas as pd 
