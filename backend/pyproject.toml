@@ -5,11 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "azure==4.0.0",
     "debugpy>=1.8.12",
     "fastapi>=0.115.7",
     "jupyter>=1.1.1",
     "lancedb>=0.18.0",
     "numpy>=2.0.2",
+    "openai>=1.60.1",
     "pandas>=2.2.3",
     "python-dotenv>=1.0.1",
 ]
