@@ -1,0 +1,17 @@
+services:
+  lancedb-dev:
+    build:
+      context: .
+      args:
+        VAULT_PASSWORD: ${VAULT_PASSWORD}
+    volumes:
+      - .:.
+    ports:
+      - "8000:8001"
+      - "5173:5173"
+      - "5678:5678"
+    environment:
+      VAULT_PASSWORD: ${VAULT_PASSWORD}
+    stdin_open: true
+    tty: true
+    command: /bin/bash

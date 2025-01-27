@@ -1,2 +1,14 @@
 .vscode/
 .dist/
+
+.dist
+__pycache__
+.venv/
+venv/
+.python-version
+*.egg-info
+*.ipynb_checkpoints/
+src/ai/lancedb/data
+.env
+dist/
+.DS_Store
