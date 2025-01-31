@@ -1,18 +1,18 @@
 import marimo
 
-__generated_with = "0.10.9"
+__generated_with = "0.10.19"
 app = marimo.App(width="full")
 
 
 @app.cell
 def _(mo):
-    mo.md("""# Bible Q&A""")
+    mo.md("""# Lancedb Viewer""")
     return
 
 
 @app.cell
 def _(mo):
-    mo.md("""This app lets you talk to a bible and ask questions about it.""")
+    mo.md("""This to test the code that is gonna be the lancedb-viewer backend. the goal is it is gonna be able to support lance db hosted at different places. starting with loca, azure blob, s3 etc""")
     return
 
 
@@ -67,7 +67,7 @@ def _(mo):
     mo.md(
         f"""
         We set a system message to determine how our agent Model will behave.
-        
+
         This is the system message:
         **{SYSTEM}**
         """
@@ -148,7 +148,6 @@ def _(BibleSchema, SYSTEM, bible_table, client, mo):
 
     # Display the chat UI
     chat
-
     return bible_query_model, chat
 
 
