@@ -5,10 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+    "altair>=5.5.0",
     "azure-identity>=1.19.0",
     "azure-keyvault>=1.1.0",
     "debugpy>=1.8.12",
     "fastapi>=0.115.7",
+    "groq>=0.15.0",
     "jupyter>=1.1.1",
     "lancedb>=0.18.0",
     "marimo>=0.10.17",
@@ -17,5 +19,8 @@ dependencies = [
     "pandas>=2.2.3",
     "pydantic>=2.10.6",
     "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+    "scikit-learn>=1.6.1",
+    "tqdm>=4.67.1",
     "uvicorn>=0.34.0",
 ]
