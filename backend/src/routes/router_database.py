@@ -1,7 +1,9 @@
 import logging
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from manager import LanceDBManager  # Import LanceDBManager
+from routes.manager import LanceDBManager  # Import LanceDBManager
+from src.routes.setup import AppConfig, DatabaseConfig
+from src.storage.provider import StorageConfig
 import hashlib
 import numpy as np
 
@@ -181,3 +183,49 @@ async def vector_search(request: Request):
     except Exception as e:
         logging.exception("Exception occurred in vector_search: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/connect/", tags=["Database"])
+async def connect_database(request: Request):
+    """
+    Connects to a LanceDB database with the specified configuration.
+    
+    Args:
+        request (Request): Body:
+            {
+                "provider": "local"|"azure"|"s3",
+                "connection_string": str,  # Optional
+                "container_name": str,     # For Azure
+                "bucket": str,             # For S3
+                "local_path": str,         # For local
+                "credentials": {           # Optional
+                    "access_key": str,
+                    "secret_key": str,
+                    # ...other provider-specific credentials
+                }
+            }
+    """
+    try:
+        config = await request.json()
+        storage_config = StorageConfig(**config)
+        
+        # Create new database manager instance with provided config
+        global db_manager
+        db_manager = (AppConfig(
+            database=DatabaseConfig(storage=storage_config)
+        ))
+        
+        # Test connection by listing tables
+        tables = db_manager.list_tables()
+        
+        return {
+            "success": True,
+            "message": "Successfully connected to database",
+            "tables": tables
+        }
+    except Exception as e:
+        logging.exception("Failed to connect to database: %s", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to connect to database: {str(e)}"
+        )
