@@ -58,6 +58,66 @@ class AzureOpenAiConfig:
         return secret.value
 
 
+@dataclass
+class StorageConfig:
+    """Configuration for storage settings"""
+    provider: str
+    connection_string: str = None
+    container_name: str = None
+    local_path: str = None
+    credentials: dict = None
+
+
+@dataclass
+class DatabaseConfig:
+    """Configuration for the database connection"""
+    storage: StorageConfig
+    table_name: str = "default"
+    
+@dataclass
+class AppConfig:
+    """Main application configuration"""
+    openai: AzureOpenAiConfig = AzureOpenAiConfig()
+    database: DatabaseConfig = DatabaseConfig(
+        storage=StorageConfig(
+            provider="local",
+            local_path="lancedb_data"
+        )
+    )
+
+    @classmethod
+    def from_environment(cls):
+        """Create configuration from environment variables"""
+        storage_provider = os.getenv("STORAGE_PROVIDER", "local")
+        
+        if storage_provider == "azure":
+            storage_config = StorageConfig(
+                provider="azure",
+                connection_string=os.getenv("AZURE_STORAGE_CONNECTION_STRING"),
+                container_name=os.getenv("AZURE_STORAGE_CONTAINER")
+            )
+        elif storage_provider == "s3":
+            storage_config = StorageConfig(
+                provider="s3",
+                credentials={
+                    "bucket": os.getenv("AWS_S3_BUCKET"),
+                    "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+                    "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY")
+                }
+            )
+        else:
+            storage_config = StorageConfig(
+                provider="local",
+                local_path=os.getenv("LOCAL_DB_PATH", "lancedb_data")
+            )
+            
+        return cls(
+            database=DatabaseConfig(
+                storage=storage_config,
+                table_name=os.getenv("DB_TABLE_NAME", "default")
+            )
+        )
+
 
 class LLM:
     """A wrapper around AzureOpenAI service, to simplify the functionality that the backend needs."""
