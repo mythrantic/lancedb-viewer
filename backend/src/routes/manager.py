@@ -9,7 +9,7 @@ from lancedb.embeddings import TextEmbeddingFunction, get_registry
 import numpy as np
 from functools import cached_property
 from openai import AzureOpenAI
-from setup import AzureOpenAiConfig
+from routes.setup import AzureOpenAiConfig
 from azure.identity import DefaultAzureCredential
 import lancedb
 import pandas as pd 
@@ -206,9 +206,9 @@ class LanceDBManager:
             table = self.connection.create_table(
                 table_name, schema=schema, exist_ok=True
             )
+            return table
         except Exception as e:
-            logging.error(f"Error creating schema for table '{
-                          table_name}': {e}")
+            logging.error(f"Error creating schema for table '{table_name}': {e}")   
 
     def create_table(self, table_name: str, schema: Any, overwrite: bool = False):
         """
@@ -365,8 +365,7 @@ class LanceDBManager:
             df = query.to_pandas()
             return df if as_pandas else df.to_dict(orient="records")
         except Exception as e:
-            logging.error(f"Error fetching data from table '{
-                          table_name}': {e}")
+            logging.error(f"Error fetching data from table '{table_name}': {e}")
             raise
        
 
@@ -449,13 +448,10 @@ class LanceDBManager:
             table = self.connection.open_table(table_name)
             table.delete(where=condition)
             logging.info(
-                f"Rows matching condition '{condition}' deleted from table '{
-                    table_name
-                }'."
+                f"Rows matching condition '{condition}' deleted from table '{table_name}'."
             )
         except Exception as e:
-            logging.error(f"Error deleting rows from table '{
-                          table_name}': {e}")
+            logging.error(f"Error deleting rows from table '{table_name}': {e}")
             raise
 
     async def delete_duplicates(self, table_name: str, subset: List[str]):
@@ -485,15 +481,12 @@ class LanceDBManager:
                     df_unique.to_dict(orient="records"), mode="overwrite"
                 )
                 logging.info(
-                    f"Removed {duplicates_removed} duplicate rows from table '{
-                        table_name
-                    }'."
+                    f"Removed {duplicates_removed} duplicate rows from table '{table_name}'."
                 )
             else:
                 logging.info(f"No duplicates found in table '{table_name}'.")
 
             return duplicates_removed
         except Exception as e:
-            logging.error(f"Error deleting duplicates from table '{
-                          table_name}': {e}")
+            logging.error(f"Error deleting duplicates from table '{table_name}': {e}")
             raise
