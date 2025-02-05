@@ -1,9 +1,21 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from azure.identity import DefaultAzureCredential
-from azure.storage.blob import BlobServiceClient
 import os
 from urllib.parse import urlparse
+
+# Check for optional dependencies
+try:
+    from azure.identity import DefaultAzureCredential
+    from azure.storage.blob import BlobServiceClient
+    AZURE_AVAILABLE = True
+except ImportError:
+    AZURE_AVAILABLE = False
+
+try:
+    import boto3
+    S3_AVAILABLE = True
+except ImportError:
+    S3_AVAILABLE = False
 
 @dataclass
 class StorageConfig:
@@ -52,6 +64,11 @@ class LocalStorageProvider(StorageProvider):
 
 class AzureBlobStorageProvider(StorageProvider):
     def __init__(self, config: StorageConfig):
+        if not AZURE_AVAILABLE:
+            raise ImportError(
+                "Azure dependencies not installed. Install with: "
+                "pip install azure-identity azure-storage-blob"
+            )
         if config.connection_string:
             self.client = BlobServiceClient.from_connection_string(config.connection_string)
         else:
@@ -73,15 +90,27 @@ class AzureBlobStorageProvider(StorageProvider):
 
 class S3StorageProvider(StorageProvider):
     def __init__(self, config: StorageConfig):
+        if not S3_AVAILABLE:
+            raise ImportError(
+                "AWS dependencies not installed. Install with: pip install boto3"
+            )
+        import boto3
         self.bucket = config.credentials.get('bucket')
-        # Add S3 client initialization here
+        self.s3_client = boto3.client(
+            's3',
+            aws_access_key_id=config.credentials.get('access_key'),
+            aws_secret_access_key=config.credentials.get('secret_key')
+        )
 
     def get_uri(self) -> str:
         return f"s3://{self.bucket}"
     
     def validate_connection(self) -> bool:
-        # Implement S3 connection validation
-        return True
+        try:
+            self.s3_client.head_bucket(Bucket=self.bucket)
+            return True
+        except Exception:
+            return False
 
 def create_storage_provider(config: StorageConfig) -> StorageProvider:
     providers = {

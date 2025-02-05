@@ -2,16 +2,15 @@ import logging
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from routes.manager import LanceDBManager  # Import LanceDBManager
-from src.routes.setup import AppConfig, DatabaseConfig
-from src.storage.provider import StorageConfig
+from routes.setup import AppConfig, DatabaseConfig
+from storage.provider import StorageConfig
 import hashlib
 import numpy as np
 
 router = APIRouter()
 
-# Initialize LanceDBManager
-# Use default database URL and Azure credentials and embedder
-db_manager = LanceDBManager()
+# Initialize with local storage by default
+db_manager = LanceDBManager(AppConfig())
 
 
 @router.post("/api/add-data/", tags=["Database"])
@@ -190,20 +189,29 @@ async def connect_database(request: Request):
     """
     Connects to a LanceDB database with the specified configuration.
     
-    Args:
-        request (Request): Body:
-            {
-                "provider": "local"|"azure"|"s3",
-                "connection_string": str,  # Optional
-                "container_name": str,     # For Azure
-                "bucket": str,             # For S3
-                "local_path": str,         # For local
-                "credentials": {           # Optional
-                    "access_key": str,
-                    "secret_key": str,
-                    # ...other provider-specific credentials
-                }
-            }
+    Example request bodies:
+    Local:
+    {
+        "provider": "local",
+        "local_path": "/path/to/db"
+    }
+    
+    Azure:
+    {
+        "provider": "azure",
+        "connection_string": "connection_string",
+        "container_name": "my-container"
+    }
+    
+    S3:
+    {
+        "provider": "s3",
+        "credentials": {
+            "bucket": "my-bucket",
+            "access_key": "access_key",
+            "secret_key": "secret_key"
+        }
+    }
     """
     try:
         config = await request.json()
@@ -211,7 +219,7 @@ async def connect_database(request: Request):
         
         # Create new database manager instance with provided config
         global db_manager
-        db_manager = (AppConfig(
+        db_manager = LanceDBManager(AppConfig(
             database=DatabaseConfig(storage=storage_config)
         ))
         
