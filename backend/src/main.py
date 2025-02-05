@@ -1,4 +1,3 @@
-import debugpy
 import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -6,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 # routes for the API
-#from routes import router_database
+from routes import router_database
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG,
@@ -22,7 +21,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# app.include_router(router_database.router)
+app.include_router(router_database.router)
 
 # CORS middleware configuration
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -34,10 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Start debugpy listener
-debugpy.listen(("0.0.0.0", 5678))
-logging.debug("Debugpy listener started on 0.0.0.0:5678")
 
 
 # Tailwind HTML Template
@@ -84,4 +79,4 @@ async def home(request: Request):
 # Run the FastAPI app
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
