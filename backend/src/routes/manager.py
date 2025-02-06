@@ -78,6 +78,7 @@ class LanceDBManager:
             self.embedder = get_embedder(provider)
         return self.embedder
 
+
     def get_table(self, table_name: str):
         """
         Get a table object from the database.
@@ -390,4 +391,17 @@ class LanceDBManager:
             return duplicates_removed
         except Exception as e:
             logging.error(f"Error deleting duplicates from table '{table_name}': {e}")
+            raise
+
+    def list_tables(self) -> List[str]:
+        """
+        Get a list of all table names in the database.
+
+        Returns:
+            List[str]: List of table names.
+        """
+        try:
+            return self.db.table_names()
+        except Exception as e:
+            logging.error(f"Error listing tables: {e}")
             raise
