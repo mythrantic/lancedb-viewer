@@ -63,10 +63,17 @@ class SimpleEmbeddings(TextEmbeddingFunction):
     """Simple embeddings for testing - uses hash of text"""
     
     def __init__(self):
-        self._dim = 64  # Small dimension for testing
+        super().__init__()
+        self._dimensions = 64  # Small dimension for testing
         
     def ndims(self) -> int:
-        return self._dim
+        return self._dimensions
+
+    def embed(self, data: Union[str, List[str]]) -> np.ndarray:
+        """Generate embeddings for input text(s)"""
+        if isinstance(data, str):
+            data = [data]
+        return np.array(self.generate_embeddings(data))
 
     def generate_embeddings(self, texts: Union[List[str], np.ndarray]) -> List[np.array]:
         """Generate simple embeddings using hash of text"""
@@ -75,10 +82,10 @@ class SimpleEmbeddings(TextEmbeddingFunction):
             
         embeddings = []
         for text in texts:
-            # Create a simple embedding based on hash of text
-            hash_val = hash(text)
+            # Create a bounded hash value (between 0 and 2**32 - 1)
+            hash_val = hash(text) & 0xFFFFFFFF  # Mask to 32 bits
             np.random.seed(hash_val)
-            embedding = np.random.normal(0, 1, self._dim)
+            embedding = np.random.normal(0, 1, self._dimensions)
             # Normalize the embedding
             embedding = embedding / np.linalg.norm(embedding)
             embeddings.append(embedding)
