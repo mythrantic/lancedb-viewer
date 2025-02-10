@@ -12,7 +12,7 @@ def test_local_db():
         database=DatabaseConfig(
             storage=StorageConfig(
                 provider="local",
-                local_path="test_db"
+                local_path="lancedb_data"
             )
         )
     )
