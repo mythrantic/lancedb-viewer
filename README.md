@@ -1,4 +1,5 @@
 # LanceDB Viewer
+![image](https://github.com/user-attachments/assets/9b2962df-1791-46c4-8ca3-cead1f0253bb)
 
 ## About
 
