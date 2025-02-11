@@ -10,41 +10,42 @@
 	<Sidebar.GroupLabel>Platform</Sidebar.GroupLabel>
 	<Sidebar.Menu>
 		{#each items as mainItem (mainItem.title)}
-			<Collapsible.Root open={mainItem.isActive}>
+			<Collapsible.Root open={mainItem.isActive} class="group/collapsible">
 				{#snippet child({ props })}
 					<Sidebar.MenuItem {...props}>
-						<Sidebar.MenuButton>
-							{#snippet tooltipContent()}
-								{mainItem.title}
-							{/snippet}
+						<Collapsible.Trigger>
 							{#snippet child({ props })}
-								<a href={mainItem.url} {...props}>
-									<mainItem.icon />
+								<Sidebar.MenuButton {...props}>
+									{#snippet tooltipContent()}
+										{mainItem.title}
+									{/snippet}
+									{#if mainItem.icon}
+										<mainItem.icon />
+									{/if}
 									<span>{mainItem.title}</span>
-								</a>
+									<ChevronRight
+										class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+									/>
+								</Sidebar.MenuButton>
 							{/snippet}
-						</Sidebar.MenuButton>
-						{#if mainItem.items?.length}
-							<Collapsible.Trigger>
-								{#snippet child({ props })}
-									<Sidebar.MenuAction {...props} class="data-[state=open]:rotate-90">
-										<ChevronRight />
-										<span class="sr-only">Toggle</span>
-									</Sidebar.MenuAction>
-								{/snippet}
-							</Collapsible.Trigger>
-							<Collapsible.Content>
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							{#if mainItem.items}
 								<Sidebar.MenuSub>
 									{#each mainItem.items as subItem (subItem.title)}
 										<Sidebar.MenuSubItem>
-											<Sidebar.MenuSubButton href={subItem.url}>
-												<span>{subItem.title}</span>
+											<Sidebar.MenuSubButton>
+												{#snippet child({ props })}
+													<a href={subItem.url} {...props}>
+														<span>{subItem.title}</span>
+													</a>
+												{/snippet}
 											</Sidebar.MenuSubButton>
 										</Sidebar.MenuSubItem>
 									{/each}
 								</Sidebar.MenuSub>
-							</Collapsible.Content>
-						{/if}
+							{/if}
+						</Collapsible.Content>
 					</Sidebar.MenuItem>
 				{/snippet}
 			</Collapsible.Root>

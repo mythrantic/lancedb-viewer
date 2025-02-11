@@ -1,4 +1,8 @@
 <script>
+	import * as Avatar from "$lib/components/ui/avatar/index.js";
+	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import { useSidebar } from "$lib/components/ui/sidebar/index.js";
 	import BadgeCheck from "lucide-svelte/icons/badge-check";
 	import Bell from "lucide-svelte/icons/bell";
 	import ChevronsUpDown from "lucide-svelte/icons/chevrons-up-down";
@@ -6,13 +10,7 @@
 	import LogOut from "lucide-svelte/icons/log-out";
 	import Sparkles from "lucide-svelte/icons/sparkles";
 
-	import * as Avatar from "$lib/components/ui/avatar/index.js";
-	import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import { useSidebar } from "$lib/components/ui/sidebar/index.js";
-
 	let { user } = $props();
-
 	const sidebar = useSidebar();
 </script>
 
@@ -22,9 +20,9 @@
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
 					<Sidebar.MenuButton
-						{...props}
 						size="lg"
 						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						{...props}
 					>
 						<Avatar.Root class="h-8 w-8 rounded-lg">
 							<Avatar.Image src={user.avatar} alt={user.name} />
