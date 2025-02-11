@@ -9,10 +9,14 @@ from lancedb.embeddings import TextEmbeddingFunction, get_registry
 import numpy as np
 from functools import cached_property
 from openai import AzureOpenAI
-from setup import AzureOpenAiConfig
+from routes.setup import AzureOpenAiConfig
 from azure.identity import DefaultAzureCredential
 import lancedb
 import pandas as pd 
+from routes.setup import AppConfig
+from storage.provider import create_storage_provider
+from embeddings import get_embedder
+
 
 # add the root directory to the path so we can import the modules not in this directory
 sys.path.append(os.path.abspath(
@@ -27,94 +31,6 @@ except Exception as e:
         "Please sure to run 'az login' in the container.")
 
 
-
-# make the custom embedder function caus ethe one provided by lancedb is not working
-@register("azure_openai")
-class AzureOpenAIEmbeddings(TextEmbeddingFunction):
-    """
-    An embedding function that uses the Azure OpenAI API
-    """
-
-    name: str = openai_config.text_embedder_lagre.deployment_name
-    azure_api_key: str = openai_config.get_openai_api_key(
-        credential=credentials)
-    azure_endpoint: str = openai_config.endpoint
-    azure_deployment: str = openai_config.text_embedder_lagre.deployment_name
-    azure_api_version: str = openai_config.text_embedder_lagre.api_version
-
-    def ndims(self):
-        return self._ndims
-
-    @cached_property
-    def _ndims(self):
-        if self.name == openai_config.text_embedder_lagre.deployment_name:
-            return openai_config.text_embedder_lagre.ndims
-        else:
-            raise ValueError(f"Unknown model name {self.name}")
-
-    # def ndims(self):
-    #     """
-    #     Return the dimensionality of the embeddings.
-    #     """
-    #     if self.name == openai_config.text_embedder_lagre.deployment_name:
-    #         return self._ndims
-    #     else:
-    #         raise ValueError(f"Unknown model name {self.name}")
-
-    def generate_embeddings(
-        self, texts: Union[List[str], np.ndarray]
-    ) -> List[np.array]:
-        """
-        Get the embeddings for the given texts
-
-        Parameters
-        ----------
-        texts: list[str] or np.ndarray (of str)
-            The texts to embed
-        """
-        # TODO retry, rate limit, token limit
-        if self.name == openai_config.text_embedder_lagre.deployment_name:
-            rs = self._azure_openai_client.embeddings.create(
-                input=texts, model=self.name
-            )
-        else:
-            rs = self._azure_openai_client.embeddings.create(
-                input=texts, model=self.name, dimensions=self.ndims()
-            )
-        return [v.embedding for v in rs.data]
-
-    @cached_property
-    def _azure_openai_client(self):
-        if not os.environ.get("OPENAI_API_KEY") and not self.azure_api_key:
-            api_key_not_found_help("openai")
-        return AzureOpenAI(
-            azure_endpoint=openai_config.endpoint,
-            # azure_ad_token_provider=token_provdier,
-            api_version=openai_config.api_version,
-            api_key=openai_config.get_openai_api_key(DefaultAzureCredential()),
-            max_retries=5,
-        )
-
-
-embedder = get_registry().get("azure_openai").create()
-
-
-def get_embedder():
-    return get_registry().get("azure_openai").create()
-
-# nest_asyncio.apply()
-
-# # Create Azure Credentials
-# credentials = DefaultAzureCredential()
-# azure_credentials = {
-#     "azure_storage_account_name": "****",
-#     "azure_tenant_id": "****",
-#     "azure_storage_token": credentials.get_token(
-#         "https://storage.azure.com/.default"
-#     ).token,
-# }
-
-
 def get_azure_storage_options(credentials: DefaultAzureCredential = DefaultAzureCredential()):
     return {
         "azure_storage_account_name": "account_name",
@@ -126,28 +42,22 @@ def get_azure_storage_options(credentials: DefaultAzureCredential = DefaultAzure
 
 
 class LanceDBManager:
-    def __init__(
-        self,
-        database_url: str = "az://dev-vector-db",
-        storage_options: Dict[str, Any] = get_azure_storage_options(),
-        embedder: TextEmbeddingFunction = embedder,
-        async_mode: bool = True,
-    ):
-        """
-        Initialize LanceDBManager with the database URL, Azure credentials, and an embedder.
+    def __init__(self, config: AppConfig = None):
+        self.config = config or AppConfig.from_environment()
+        self.storage = create_storage_provider(self.config.database.storage)
+        self.embedder = None
+        self.db = None
+        self.connect()
 
-        Args:
-            database_url (str): The path or URL to the LanceDB database.
-            azure_credentials (dict): Azure storage credentials.
-            embedder (TextEmbeddingFunction): Embedder instance for generating embeddings.
-        """
-        self.database_url = database_url
-        self.storage_options = storage_options
-        self.embedder = embedder
-        self.async_mode = async_mode
-        self.connection = lancedb.connect(
-            uri=self.database_url, storage_options=self.storage_options
-        )
+    def connect(self):
+        """Connect or reconnect to the database"""
+        import lancedb
+        self.db = lancedb.connect(self.storage.get_uri())
+        return self.table_names
+        
+    @property
+    def table_names(self) -> List[str]:
+        return self.db.table_names()
         
     def _get_unique_ids(self, table, unique_field):
         existing_ids = table.search().limit(table.count_rows()).select([unique_field]).to_list()
@@ -161,22 +71,13 @@ class LanceDBManager:
             data = [data]
         return data
     
-    
-        
+    def _get_embedder(self):
+        """Lazy load embedder when needed"""
+        if self.embedder is None:
+            provider = self.config.database.embedder_provider
+            self.embedder = get_embedder(provider)
+        return self.embedder
 
-    @property
-    def table_names(self):
-        """
-        Retrieve a list of table names in the database.
-
-        Returns:
-            List of table names.
-        """
-        try:
-            return self.connection.table_names()
-        except Exception as e:
-            logging.error(f"Error fetching table names: {e}")
-            raise
 
     def get_table(self, table_name: str):
         """
@@ -189,7 +90,7 @@ class LanceDBManager:
             Table: LanceDB table object.
         """
         try:
-            return  self.connection.open_table(table_name)
+            return  self.db.open_table(table_name)
         except Exception as e:
             logging.error(f"Error getting table '{table_name}': {e}")
             raise
@@ -203,12 +104,12 @@ class LanceDBManager:
             schema (Any): Schema of the table.
         """
         try:
-            table = self.connection.create_table(
+            table = self.db.create_table(
                 table_name, schema=schema, exist_ok=True
             )
+            return table
         except Exception as e:
-            logging.error(f"Error creating schema for table '{
-                          table_name}': {e}")
+            logging.error(f"Error creating schema for table '{table_name}': {e}")   
 
     def create_table(self, table_name: str, schema: Any, overwrite: bool = False):
         """
@@ -221,7 +122,7 @@ class LanceDBManager:
         """
         try:
             mode = "overwrite" if overwrite else "create"
-            self.connection.create_table(table_name, schema=schema, mode=mode)
+            self.db.create_table(table_name, schema=schema, mode=mode)
             logging.info(f"Table '{table_name}' created successfully.")
         except Exception as e:
             logging.error(f"Error creating table '{table_name}': {e}")
@@ -244,7 +145,7 @@ class LanceDBManager:
             raise ValueError("Unique field must be specified to check for duplicates.")
 
         try:
-            table = self.connection.open_table(table_name)
+            table = self.db.open_table(table_name)
             existing_ids = self._get_unique_ids(table, unique_field)
             data = self._format_input_data(data)
             new_ids = [item[unique_field] for item in data] 
@@ -285,7 +186,7 @@ class LanceDBManager:
 
         try:
             
-            table =  self.connection.open_table(table_name)
+            table =  self.db.open_table(table_name)
             data = self._format_input_data(data)
             
             update_count = 0
@@ -334,7 +235,7 @@ class LanceDBManager:
         """
         # docs used to make this function: https://lancedb.github.io/lancedb/sql/#pre-and-post-filtering
         try:
-            table = self.connection.open_table(table_name)
+            table = self.db.open_table(table_name)
             query = table.search()
 
             # dont include the vector column in the results .select(["title", "text", "_distance"]) is used to define the columns to be returned
@@ -365,8 +266,7 @@ class LanceDBManager:
             df = query.to_pandas()
             return df if as_pandas else df.to_dict(orient="records")
         except Exception as e:
-            logging.error(f"Error fetching data from table '{
-                          table_name}': {e}")
+            logging.error(f"Error fetching data from table '{table_name}': {e}")
             raise
        
 
@@ -393,7 +293,7 @@ class LanceDBManager:
             List[Dict]: Search results as a list of dictionaries. if as_pandas is set to False
         """
         try:
-            table = self.connection.open_table(table_name)
+            table = self.db.open_table(table_name)
 
             # dont include the vector column in the results .select(["title", "text", "_distance"]) is used to define the columns to be returned
             # !DANGER The paranthesis around async_table.to_pandas() is used to make sure that the head function is called on the dataframe and not coroutine
@@ -402,8 +302,9 @@ class LanceDBManager:
                 col for col in table.schema.names if col not in columns_to_exclude
             ]
 
-            # Generate embedding for the query
-            embedding = self.embedder.generate_embeddings([query])[0]
+            # Get embedder only when needed
+            embedder = self._get_embedder()
+            embedding = embedder.generate_embeddings([query])[0]
 
             # Perform vector search
             # results = await async_table.vector_search(embedding).limit(limit).to_pandas()
@@ -430,7 +331,7 @@ class LanceDBManager:
             table_name (str): Name of the table to delete.
         """
         try:
-            self.connection.drop_table(table_name)
+            self.db.drop_table(table_name)
             logging.info(f"Table '{table_name}' deleted successfully.")
             return True
         except Exception as e:
@@ -446,16 +347,13 @@ class LanceDBManager:
             condition (str): Condition to match rows for deletion.
         """
         try:
-            table = self.connection.open_table(table_name)
+            table = self.db.open_table(table_name)
             table.delete(where=condition)
             logging.info(
-                f"Rows matching condition '{condition}' deleted from table '{
-                    table_name
-                }'."
+                f"Rows matching condition '{condition}' deleted from table '{table_name}'."
             )
         except Exception as e:
-            logging.error(f"Error deleting rows from table '{
-                          table_name}': {e}")
+            logging.error(f"Error deleting rows from table '{table_name}': {e}")
             raise
 
     async def delete_duplicates(self, table_name: str, subset: List[str]):
@@ -470,7 +368,7 @@ class LanceDBManager:
             int: Number of duplicate rows removed.
         """
         try:
-            table = self.connection.open_table(table_name)
+            table = self.db.open_table(table_name)
 
             # Fetch the table's data
             df = table.to_pandas()
@@ -485,15 +383,25 @@ class LanceDBManager:
                     df_unique.to_dict(orient="records"), mode="overwrite"
                 )
                 logging.info(
-                    f"Removed {duplicates_removed} duplicate rows from table '{
-                        table_name
-                    }'."
+                    f"Removed {duplicates_removed} duplicate rows from table '{table_name}'."
                 )
             else:
                 logging.info(f"No duplicates found in table '{table_name}'.")
 
             return duplicates_removed
         except Exception as e:
-            logging.error(f"Error deleting duplicates from table '{
-                          table_name}': {e}")
+            logging.error(f"Error deleting duplicates from table '{table_name}': {e}")
+            raise
+
+    def list_tables(self) -> List[str]:
+        """
+        Get a list of all table names in the database.
+
+        Returns:
+            List[str]: List of table names.
+        """
+        try:
+            return self.db.table_names()
+        except Exception as e:
+            logging.error(f"Error listing tables: {e}")
             raise
