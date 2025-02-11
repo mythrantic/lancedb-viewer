@@ -1,5 +1,6 @@
 # LanceDB Viewer
-![image](https://github.com/user-attachments/assets/9b2962df-1791-46c4-8ca3-cead1f0253bb)
+
+![image](./frontend/static/image.png)
 
 ## About
 
@@ -7,15 +8,15 @@ LanceDB Viewer is a user-friendly tool designed to interact with LanceDB, offeri
 
 ## Features
 
--   **Visual Interface**: Easily browse and manage LanceDB databases.
--   **CRUD Support**: Perform Create, Read, Update, and Delete operations seamlessly.
--   **Developer-Friendly**: Designed for both end-users and contributors.
+- **Visual Interface**: Easily browse and manage LanceDB databases.
+- **CRUD Support**: Perform Create, Read, Update, and Delete operations seamlessly.
+- **Developer-Friendly**: Designed for both end-users and contributors.
 
 ## Tech Stack
 
--   **Backend**: Python (FastAPI)
--   **Frontend**: SvelteKit
--   **Database**: LanceDB
+- **Backend**: Python (FastAPI)
+- **Frontend**: SvelteKit
+- **Database**: LanceDB
 
 ---
 
@@ -25,9 +26,9 @@ LanceDB Viewer is a user-friendly tool designed to interact with LanceDB, offeri
 
 Ensure you have the following installed on your system:
 
--   **Node.js** (v16 or higher)
--   **Python** (v3.8 or higher)
--   **npm** (comes with Node.js)
+- **Node.js** (v16 or higher)
+- **Python** (v3.8 or higher)
+- **npm** (comes with Node.js)
 
 ---
 
@@ -41,11 +42,13 @@ To start the application in development mode:
     git clone https://github.com/valiantlynx/lancedb-viewer.git
     cd lancedb-viewer
     ```
+
 2.  Start the backend server:
 
     ```bash
     python src/main.py
     ```
+
 3.  Start the frontend development server:
 
     ```bash
@@ -53,6 +56,7 @@ To start the application in development mode:
     npm install
     npm run dev
     ```
+
 4.  Open your browser and navigate to [http://localhost:5173](http://localhost:5173).
 
 ---
@@ -70,7 +74,8 @@ If you'd like to contribute:
     This will set up a complete development environment for testing and contributing.
 
     or do it however you like
-3.  Make your changes and submit a Pull Request.
+
+2.  Make your changes and submit a Pull Request.
 
 ---
 
