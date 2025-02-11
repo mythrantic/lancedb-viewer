@@ -1,59 +1,39 @@
 <script>
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcomeFallback from '$lib/images/svelte-welcome.png';
+	import * as Resizable from '$lib/components/ui/resizable/index.js';
+	import { toast } from 'svelte-sonner';
+	import { Button } from '$lib/components/ui/button/index.js';
 </script>
 
-<svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
-</svelte:head>
-
-<section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcomeFallback} alt="Welcome" />
-			</picture>
-		</span>
-
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
-</section>
-
-<style>
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
-	}
-
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
-	}
-</style>
+<Resizable.PaneGroup direction="horizontal" class="rounded-lg border">
+	<Resizable.Pane defaultSize={500}>
+		<Button
+			variant="outline"
+			onclick={() =>
+				toast.success('Event has been created', {
+					description: 'Sunday, December 03, 2023 at 9:00 AM',
+					action: {
+						label: 'Undo',
+						onClick: () => console.info('Undo')
+					}
+				})}
+		>
+			Show Toast
+		</Button>
+	</Resizable.Pane>
+	<Resizable.Handle />
+	<Resizable.Pane defaultSize={500}>
+		<Resizable.PaneGroup direction="vertical">
+			<Resizable.Pane defaultSize={250}>
+				<div class="flex h-full items-center justify-center p-6">
+					<span class="font-semibold">Two</span>
+				</div>
+			</Resizable.Pane>
+			<Resizable.Handle />
+			<Resizable.Pane defaultSize={750}>
+				<div class="flex h-full items-center justify-center p-6">
+					<span class="font-semibold">Three</span>
+				</div>
+			</Resizable.Pane>
+		</Resizable.PaneGroup>
+	</Resizable.Pane>
+</Resizable.PaneGroup>
