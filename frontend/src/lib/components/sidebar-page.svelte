@@ -1,10 +1,8 @@
-<script lang="ts">
-	import AppSidebar from '$lib/components/app-sidebar.svelte';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
-	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { toast } from 'svelte-sonner';
-	import { Button } from '$lib/components/ui/button/index.js';
+<script>
+	import AppSidebar from "$lib/components/app-sidebar.svelte";
+	import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+	import { Separator } from "$lib/components/ui/separator/index.js";
+	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 </script>
 
 <Sidebar.Provider>
@@ -29,21 +27,7 @@
 		</header>
 		<div class="flex flex-1 flex-col gap-4 p-4 pt-0">
 			<div class="grid auto-rows-min gap-4 md:grid-cols-3">
-				<div class="bg-muted/50 aspect-video rounded-xl">
-					<Button
-						variant="outline"
-						onclick={() =>
-							toast.success('Event has been created', {
-								description: 'Sunday, December 03, 2023 at 9:00 AM',
-								action: {
-									label: 'Undo',
-									onClick: () => console.info('Undo')
-								}
-							})}
-					>
-						Show Toast
-					</Button>
-				</div>
+				<div class="bg-muted/50 aspect-video rounded-xl"></div>
 				<div class="bg-muted/50 aspect-video rounded-xl"></div>
 				<div class="bg-muted/50 aspect-video rounded-xl"></div>
 			</div>
