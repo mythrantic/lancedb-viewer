@@ -34,7 +34,6 @@ def test_local_db():
         {"id": 2, "text": "How are you?", "category": "question"},
         {"id": 3, "text": "Goodbye world", "category": "farewell"}
     ]
-    
     # Add vector embeddings to the data
     data = []
     for item in base_data:
