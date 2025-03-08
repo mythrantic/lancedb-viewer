@@ -1,6 +1,6 @@
 <script>
-	import Ellipsis from "lucide-svelte/icons/ellipsis";
-	import { cn } from "$lib/utils.js";
+	import Ellipsis from 'lucide-svelte/icons/ellipsis';
+	import { cn } from '$lib/utils.js';
 
 	let { ref = $bindable(null), class: className, ...restProps } = $props();
 </script>
@@ -9,7 +9,7 @@
 	bind:this={ref}
 	role="presentation"
 	aria-hidden="true"
-	class={cn("flex size-9 items-center justify-center", className)}
+	class={cn('flex size-9 items-center justify-center', className)}
 	{...restProps}
 >
 	<Ellipsis class="size-4" />

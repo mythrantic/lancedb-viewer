@@ -1,5 +1,5 @@
 <script>
-	import { cn } from "$lib/utils.js";
+	import { cn } from '$lib/utils.js';
 
 	let {
 		ref = $bindable(null),
@@ -11,9 +11,9 @@
 	} = $props();
 
 	const attrs = $derived({
-		class: cn("hover:text-foreground transition-colors", className),
+		class: cn('hover:text-foreground transition-colors', className),
 		href,
-		...restProps,
+		...restProps
 	});
 </script>
 

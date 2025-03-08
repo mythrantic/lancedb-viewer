@@ -1,8 +1,8 @@
 <script>
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { cn } from "$lib/utils.js";
-	import PanelLeft from "lucide-svelte/icons/panel-left";
-	import { useSidebar } from "./context.svelte.js";
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { cn } from '$lib/utils.js';
+	import PanelLeft from 'lucide-svelte/icons/panel-left';
+	import { useSidebar } from './context.svelte.js';
 
 	let { ref = $bindable(null), class: className, onclick, ...restProps } = $props();
 
@@ -18,7 +18,7 @@
 	data-sidebar="trigger"
 	variant="ghost"
 	size="icon"
-	class={cn("h-7 w-7", className)}
+	class={cn('h-7 w-7', className)}
 	{...restProps}
 >
 	<PanelLeft />
