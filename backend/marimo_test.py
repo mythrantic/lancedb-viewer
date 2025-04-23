@@ -1,6 +1,8 @@
+
+
 import marimo
 
-__generated_with = "0.10.19"
+__generated_with = "0.13.0"
 app = marimo.App(width="full")
 
 
@@ -45,15 +47,25 @@ def _():
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY") if os.environ.get("GROQ_API_KEY") else mo.ui.text(label="🤖 Groq Key", kind="password")
     JINA_API_KEY = os.environ.get("JINA_API_KEY") if os.environ.get("JINA_API_KEY") else mo.ui.text(label="🦾 Jina Key", kind="password")
-
-    config = mo.hstack([GROQ_API_KEY,JINA_API_KEY])
-    mo.accordion({"⚙️ Config -  here is all thats needed for the notebook to run and function correctly. both of these are FREE!! baby!!": config})
-    return GROQ_API_KEY, Groq, JINA_API_KEY, config, load_dotenv, mo, os
+    return GROQ_API_KEY, Groq, JINA_API_KEY, mo, os
 
 
 @app.cell
-def _(Groq):
-    client = Groq() # uses the default api key in the environment
+def _(GROQ_API_KEY, JINA_API_KEY, mo):
+    config = mo.hstack([GROQ_API_KEY, JINA_API_KEY])
+    mo.accordion(
+        {
+            "⚙️ Config -  here is all thats needed for the notebook to run and function correctly. both of these are FREE!! baby!!": config
+        }
+    )
+    return
+
+
+@app.cell
+def _(GROQ_API_KEY, Groq):
+    client = Groq(
+        api_key=GROQ_API_KEY
+    ) # uses the default api key in the environment
     return (client,)
 
 
@@ -148,7 +160,7 @@ def _(BibleSchema, SYSTEM, bible_table, client, mo):
 
     # Display the chat UI
     chat
-    return bible_query_model, chat
+    return
 
 
 @app.cell
@@ -275,36 +287,7 @@ def _(mo, os):
         This is the code for getting the datasett making embeddings out of all of them and saving them  to lacedb. ready to be used for quering
         """
     )
-    return (
-        BibleSchema,
-        EMBEDDING_DIM,
-        EmbeddingFunctionRegistry,
-        LanceModel,
-        Vector,
-        batch,
-        batch_start,
-        bible_df,
-        bible_table,
-        data,
-        db,
-        db_path,
-        embedding,
-        embeddings,
-        existing_ids,
-        existing_rows,
-        final_rows,
-        idx,
-        jina_embedder,
-        lancedb,
-        pd,
-        registry,
-        requests,
-        response,
-        row,
-        texts,
-        tqdm,
-        unembedded_bible_data,
-    )
+    return BibleSchema, bible_table, pd
 
 
 @app.cell
@@ -334,7 +317,7 @@ def _(bible_table, mo, pd):
         Now to visualize the embedding we can use many thing. for example below we used PCA
         """
     )
-    return PCA, all_embeddings, embedding_plot, np, pca, pca_result
+    return (embedding_plot,)
 
 
 @app.cell
@@ -344,7 +327,7 @@ def _(bible_table, mo):
 
     stuff_to_accord = mo.hstack([mo.ui.table(db_data)])
     mo.accordion({f"**This is how the data is like in the lancedb: total length: {len(db_data)} rows**": stuff_to_accord})
-    return db_data, stuff_to_accord
+    return
 
 
 @app.cell
@@ -364,7 +347,7 @@ def _(mo):
 @app.cell
 def _(chart, mo):
     table_ui = mo.ui.table(chart.value)
-    return (table_ui,)
+    return
 
 
 @app.cell
@@ -393,7 +376,7 @@ async def _():
         await micropip.install("altair")
 
     import altair as alt
-    return alt, micropip, sys
+    return (alt,)
 
 
 @app.cell
