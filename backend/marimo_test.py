@@ -38,6 +38,7 @@ def _(mo):
 def _():
     import os
     from groq import Groq
+    from ollama import Client
     from dotenv import load_dotenv
     import marimo as mo
 
@@ -47,7 +48,7 @@ def _():
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY") if os.environ.get("GROQ_API_KEY") else mo.ui.text(label="🤖 Groq Key", kind="password")
     JINA_API_KEY = os.environ.get("JINA_API_KEY") if os.environ.get("JINA_API_KEY") else mo.ui.text(label="🦾 Jina Key", kind="password")
-    return GROQ_API_KEY, Groq, JINA_API_KEY, mo, os
+    return Client, GROQ_API_KEY, Groq, JINA_API_KEY, mo, os
 
 
 @app.cell
@@ -67,6 +68,25 @@ def _(GROQ_API_KEY, Groq):
         api_key=GROQ_API_KEY
     ) # uses the default api key in the environment
     return (client,)
+
+
+@app.cell
+def _(Client):
+    ollamaClient = Client(
+      host='https://ollama.valiantlynx.com'
+    )
+    ollamaResponse = ollamaClient.chat(
+        model='gemma3:latest', messages=[
+          {
+            'role': 'user',
+            'content': 'Why is the sky blue?',
+          },
+        ],
+        stream=True,
+    )
+    for chunk in ollamaResponse:
+      print(chunk['message']['content'], end='', flush=True)
+    return
 
 
 @app.cell
