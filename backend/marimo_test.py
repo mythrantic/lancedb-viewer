@@ -2,23 +2,23 @@
 
 import marimo
 
-__generated_with = "0.13.0"
+__generated_with = "0.13.2"
 app = marimo.App(width="full")
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""# Lancedb Viewer""")
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md("""This to test the code that is gonna be the lancedb-viewer backend. the goal is it is gonna be able to support lance db hosted at different places. starting with loca, azure blob, s3 etc""")
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.accordion({
         "How is this app implemented?": """
@@ -48,10 +48,10 @@ def _():
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY") if os.environ.get("GROQ_API_KEY") else mo.ui.text(label="🤖 Groq Key", kind="password")
     JINA_API_KEY = os.environ.get("JINA_API_KEY") if os.environ.get("JINA_API_KEY") else mo.ui.text(label="🦾 Jina Key", kind="password")
-    return Client, GROQ_API_KEY, Groq, JINA_API_KEY, mo, os
+    return Client, GROQ_API_KEY, Groq, JINA_API_KEY, mo
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(GROQ_API_KEY, JINA_API_KEY, mo):
     config = mo.hstack([GROQ_API_KEY, JINA_API_KEY])
     mo.accordion(
@@ -63,33 +63,35 @@ def _(GROQ_API_KEY, JINA_API_KEY, mo):
 
 
 @app.cell
-def _(GROQ_API_KEY, Groq):
+def _(Client, GROQ_API_KEY, Groq):
     client = Groq(
         api_key=GROQ_API_KEY
     ) # uses the default api key in the environment
-    return (client,)
 
-
-@app.cell
-def _(Client):
     ollamaClient = Client(
       host='https://ollama.valiantlynx.com'
     )
+    return client, ollamaClient
+
+
+@app.cell
+def _(mo, ollamaClient):
+
     ollamaResponse = ollamaClient.chat(
         model='gemma3:latest', messages=[
           {
             'role': 'user',
-            'content': 'Why is the sky blue?',
-          },
-        ],
-        stream=True,
+            'content': 'Why is the sky blue? in three brief and short technichal sentences',
+          }
+        ]
     )
-    for chunk in ollamaResponse:
-      print(chunk['message']['content'], end='', flush=True)
+
+
+    mo.md(ollamaResponse.message.content)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     SYSTEM = """
         You will recieve verses of the bible.
@@ -107,13 +109,78 @@ def _(mo):
     return (SYSTEM,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(
         f"""
         ⚡️✨Test this chat below to see ✨⚡️
         """
     )
+    return
+
+
+@app.cell
+def _(BibleSchema, SYSTEM, bible_query_model, bible_table, mo, ollamaClient):
+    # Define the function to query the Bible table and ollama
+    def query_model(messages, config):
+        """
+        Custom RAG (Retrieval-Augmented Generation) model for querying the Bible.
+
+        Args:
+            messages (List[ChatMessage]): The chat history, including the user question.
+            config (ChatModelConfig): The configuration for the LLM.
+
+        Returns:
+            str: The LLM-generated response.
+        """
+        # Extract the latest user message
+        user_message = messages[-1].content
+
+        # Helper function to extract and sort context from LanceDB rows
+        def extract_context(rows):
+            return sorted(
+                [{"full_text": r.full_text, "verse_id": r.verse_id} for r in rows],
+                key=lambda x: x["verse_id"],
+            )
+
+        # Query the Bible table for context
+        rows = bible_table.search(user_message).limit(100).to_pydantic(BibleSchema)
+        context = extract_context(rows)
+
+        if not context:
+            return "No relevant context found in the database."
+
+        # Prepare the context and question for the Groq model
+        ollama_messages = [
+            {"role": "system", "content": SYSTEM},
+            {"role": "user", "content": f"Context: {context}"},
+            {"role": "user", "content": f"Question: {user_message}"},
+        ]
+
+        # Query the Groq model
+        response = ollamaClient.chat.completions.create(
+            messages=ollama_messages,
+            model="llama3.1",
+            stream=False,
+        )
+
+        # Stream and collect the response chunk by chunk
+        # print("**Groq Model Response:**\n")
+        # response_text = ""
+        # for chunk in stream:
+        #    if hasattr(chunk, "choices") and chunk.choices:
+        #        for choice in chunk.choices:
+        #            if choice.delta and choice.delta.content:
+        #                print(choice.delta.content, end="", flush=True)
+        #                response_text += choice.delta.content
+
+        return response.choices[0].message.content
+
+    # Configure the Marimo chat UI with the Bible query model
+    ollama_chat = mo.ui.chat(bible_query_model)
+
+    # Display the chat UI
+    ollama_chat
     return
 
 
@@ -131,7 +198,6 @@ def _(BibleSchema, SYSTEM, bible_table, client, mo):
         Returns:
             str: The LLM-generated response.
         """
-        print(messages[0])
         # Extract the latest user message
         user_message = messages[-1].content
 
@@ -180,11 +246,11 @@ def _(BibleSchema, SYSTEM, bible_table, client, mo):
 
     # Display the chat UI
     chat
-    return
+    return (bible_query_model,)
 
 
 @app.cell
-def _(mo, os):
+def _(mo):
     import pandas as pd
     import lancedb
     from lancedb.pydantic import LanceModel, Vector
@@ -196,15 +262,16 @@ def _(mo, os):
     # Initialize the Jina embedder through LanceDB
     registry = EmbeddingFunctionRegistry.get_instance()
     jina_embedder = registry.get("jina").create() # uses the api key in the environment
+    ollama_embedder  = registry.get("ollama").create(name="nomic-embed-text", host="https://ollama.valiantlynx.com")
 
     # Confirm embedding dimensions from Jina
-    EMBEDDING_DIM = jina_embedder.ndims()
+    EMBEDDING_DIM = ollama_embedder.ndims()
     print(f"Using embedding dimension: {EMBEDDING_DIM}")
 
     # Define schema for Bible embeddings
     class BibleSchema(LanceModel):
-        text: str = jina_embedder.SourceField()
-        embedding: Vector(EMBEDDING_DIM) = jina_embedder.VectorField()
+        text: str = ollama_embedder.SourceField()
+        embedding: Vector(EMBEDDING_DIM) = ollama_embedder.VectorField()
         verse_id: int
         book_name: str
         chapter: int
@@ -218,7 +285,7 @@ def _(mo, os):
 
     # Load Bible data
     bible_df = pd.read_csv(
-        "web.csv",
+        "/home/valiantlynx/projects/lancedb-viewer/backend/web.csv",
         names=["Verse ID", "Book Name", "Book Number", "Chapter", "Verse", "Text"],
         skiprows=1,  # Skip the header row since column names are explicitly defined
     )
@@ -257,41 +324,51 @@ def _(mo, os):
     print(f"Unembedded rows to process: {len(unembedded_bible_data)}")
 
     # Embed unembedded rows if there are any
+    # Embed unembedded rows if there are any
     if unembedded_bible_data:
         print(f"Embedding {len(unembedded_bible_data)} new rows...")
+    
+        # Define the Ollama API endpoint (default local address)
+        OLLAMA_API_URL = "https://ollama.valiantlynx.com/api/embeddings"
+    
         for batch_start in tqdm(range(0, len(unembedded_bible_data), 100), desc="Embedding batches"):
             batch = unembedded_bible_data[batch_start:batch_start + 100]
-
             # Prepare texts for embedding
             texts = [row["full_text"] for row in batch]
+        
             try:
-                # Get embeddings from Jina
-                data = {"model": "jina-embeddings-v3", "task": "text-matching", "input": texts}
-                response = requests.post(
-                    "https://api.jina.ai/v1/embeddings",
-                    headers={"Authorization": f"Bearer {os.environ['JINA_API_KEY']}"},
-                    json=data,
-                )
-                if response.status_code != 200:
-                    print(f"Error: {response.status_code}, Response: {response.text}")
-                    continue
-
-                embeddings = response.json().get("data", [])
-                if len(embeddings) != len(batch):
-                    print(f"Embedding count mismatch. Expected {len(batch)}, got {len(embeddings)}")
-                    continue
-
+                # Process each text individually through Ollama's Nomic embed model
+                batch_embeddings = []
+            
+                for text in texts:
+                    # Get embeddings from local Ollama using Nomic embed model
+                    response = requests.post(
+                        OLLAMA_API_URL,
+                        json={
+                            "model": "nomic-embed-text",
+                            "prompt": text
+                        }
+                    )
+                
+                    if response.status_code != 200:
+                        print(f"Error: {response.status_code}, Response: {response.text}")
+                        continue
+                
+                    embedding = response.json().get("embedding", [])
+                    batch_embeddings.append(embedding)
+            
                 # Add embeddings to LanceDB
                 for idx, row in enumerate(batch):
-                    # Validate embedding dimensions
-                    embedding = embeddings[idx]["embedding"]
-                    if len(embedding) != EMBEDDING_DIM:
-                        print(f"Error embedding batch starting at index {batch_start}: Length of item not correct.")
-                        continue
-
-                    row["embedding"] = [float(e) for e in embedding]
+                    if idx < len(batch_embeddings):
+                        # Validate embedding dimensions
+                        embedding = batch_embeddings[idx]
+                        if len(embedding) != EMBEDDING_DIM:
+                            print(f"Error embedding batch starting at index {batch_start}: Length of item not correct. Got {len(embedding)}, expected {EMBEDDING_DIM}")
+                            continue
+                        row["embedding"] = [float(e) for e in embedding]
+                
                 bible_table.add(batch)
-
+            
             except Exception as e:
                 print(f"Error embedding batch starting at index {batch_start}: {e}")
     else:
