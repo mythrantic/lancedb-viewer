@@ -1,6 +1,7 @@
 .vscode/
 .dist/
 
+bible_lancedb_bob/
 .dist
 __pycache__
 .venv/
