@@ -2,4 +2,4 @@
 __pycache__/
 *.lance
 lancedb_data/
-bible_lancedb_blob/
+bible_lancedb_bob/
